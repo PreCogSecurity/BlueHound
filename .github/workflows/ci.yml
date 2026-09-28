@@ -1,0 +1,85 @@
+name: CI
+
+# BlueHound is a security tool that customers run against their production
+# directory: every merge is a chance to ship a silently broken collection or a
+# new attack surface. Every push and pull request runs the same gate.
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Install, typecheck, test and lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # BlueHound ships Windows, macOS and Linux desktop builds, and the
+        # ingestion guards behave differently per path separator, so the suite
+        # runs on more than one platform.
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Keep in sync with .nvmrc and the `engines` field in package.json.
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        # `npm ci` installs exactly what the lockfile pins and fails when
+        # package.json and the lockfile have drifted apart. The fallback is for
+        # clones that do not have a lockfile yet.
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+        shell: bash
+
+      - name: Typecheck
+        # Report-only for now: `tsconfig.json` has `strict: true` against a
+        # 16k-line legacy codebase, so a hard gate here would be red on the very
+        # first run and would train everyone to ignore CI. The backlog is being
+        # worked down; this step must become required once it is clean.
+        run: npm run typecheck
+        continue-on-error: true
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+        shell: bash
+
+      - name: Audit production dependencies
+        # Report-only: an advisory on a transitive dependency should not block
+        # an unrelated hotfix, but it must never go unnoticed.
+        run: npm audit --omit=dev --audit-level=high || echo "::warning::npm audit reported advisories in production dependencies"

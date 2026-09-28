@@ -1290,19 +1290,30 @@ export const PAGE_INITIAL_STATE = {
 
 /**
  * Swaps two elements in the reports array.
+ *
+ * Returns a new array: `splice` on the incoming `state.reports` mutated the
+ * Redux store in place, so a card reorder could leave previously rendered
+ * cards pointing at re-ordered state (and redux-devtools time travel showed
+ * the wrong tree).
  */
 function swapTwoCardsInPage(cards, fromIndex, toIndex) {
-    // If the indices are the same, just return the same array.
+    // If the indices are the same, or out of range, just return the same array.
     if (fromIndex === toIndex) {
         return cards;
     }
-    cards.splice(fromIndex, 1, cards.splice(toIndex, 1, cards[fromIndex])[0]);
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= cards.length || toIndex >= cards.length) {
+        return cards;
+    }
+
+    const reports = cards.slice();
+    const [moved] = reports.splice(fromIndex, 1);
+    reports.splice(toIndex, 0, moved);
 
     // We make sure that the transition is temporarily disabled for both cards.
-    cards[fromIndex].collapseTimeout = 0
-    cards[toIndex].collapseTimeout = 0
+    reports[fromIndex] = Object.assign({}, reports[fromIndex], { collapseTimeout: 0 });
+    reports[toIndex] = Object.assign({}, reports[toIndex], { collapseTimeout: 0 });
 
-    return cards;
+    return reports;
 }
 
 /**

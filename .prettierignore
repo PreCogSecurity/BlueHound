@@ -1,0 +1,8 @@
+node_modules
+dist
+out
+build
+package-lock.json
+src/chart/sigma.min.js
+src/chart/sigma.helpers.graph.min.js
+public

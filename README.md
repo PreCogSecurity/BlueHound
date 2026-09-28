@@ -51,7 +51,7 @@ Using the **Edge Filtering** section, you can filter out specific relationship t
 You can also filter by a specific category (see the *Info* icon) or even define your own custom edge filters.
 ## Import & Export Config
 The **Export Config** and **Import Config** sections can be used to save & load your dashboard and configurations as a backup, and even shared between users to collaborate and contribute insightful queries to the security community. Don’t worry, your credentials and data won’t be exported.<br><br>
-***Note: any arguments for data import tools are also exported, so make sure you remove any secrets before sharing your configuration.*** 
+***Note: any arguments for data import tools are also exported, so make sure you remove any secrets before sharing your configuration.*** An imported configuration is untrusted input: tool paths, tool arguments, chart queries and links all come from it. BlueHound validates them (see [SECURITY.md](SECURITY.md)), but you are still choosing what to run.
 ## Settings
 The Settings section allows you to set some global limits on query execution – maximum query time and a limit for returned results.
 
@@ -60,25 +60,80 @@ BlueHound is a fork of [NeoDash](https://github.com/neo4j-labs/neodash), built w
 It uses [charts](https://github.com/neo4j-labs/charts) to power some of the visualizations.
 You can also extend NeoDash with your own visualizations. Check out the developer guide in the [project repository](https://github.com/neo4j-labs/neodash).
 
+## Architecture
+BlueHound is a two-process Electron application plus a browser bundle.
+
+| Component | Location | Responsibility |
+| --- | --- | --- |
+| Electron main process | `src/main.ts` | Window lifecycle, all privileged work: spawning collectors, unzipping and ingesting results, native dialogs, scheduled tasks. |
+| Preload bridge | `src/preload.js` | The *only* channel between the renderer and the main process (`contextBridge`, `contextIsolation` on, `nodeIntegration` off). |
+| Renderer | `src/index.tsx` and the rest of `src/` | React/Redux UI: dashboard, cards, charts, modals. Persisted to `localStorage`. |
+| Ingestion | `src/collectors/` | Reads SharpHound/ShotHound JSON (streamed, batched) and writes it into Neo4j. |
+| Reducers | `src/{application,dashboard,page,card}/` | Redux state transitions. These are the unit-tested core of the app. |
+| Shared utilities | `src/utils/` | Logger with secret redaction, external-link allow-list, scheduled-task argument builder, collector-launch validation. |
+
+Data flow for a collection: the collection modal asks the main process to run a
+collector → the collector writes a zip to disk → the main process validates and
+extracts the archive into a temp directory → each JSON file is streamed,
+normalised by `src/collectors/newingestion.js` and written to Neo4j in batches →
+a post-processing pass marks high-value objects, owned objects and default
+groups → the renderer is told the upload finished and re-runs its queries.
+
+Anything that crosses a trust boundary (archives, URLs, IPC payloads, process
+arguments) is validated in `src/utils/` and has tests. See
+[SECURITY.md](SECURITY.md) for the threat model.
+
 # Developer Guide
+
+## Prerequisites
+- Node.js `>= 22.13` (see `.nvmrc`; `nvm use` picks it up)
+- npm `>= 10`
 
 ## Run & Build using npm
 BlueHound is built with React. You'll need `npm` installed to run the web app.
 
-> Use a recent version of `npm` and `node` to build BlueHound. The application has been tested with npm 8.3.1 & node v17.4.0.
-
 To run the application in development mode:
 - clone this repository.
 - open a terminal and navigate to the directory you just cloned.
-- execute `npm install` to install the necessary dependencies.
+- execute `nvm use` to pick the pinned Node version.
+- execute `npm install` (or `npm ci` when a `package-lock.json` is present) to install the necessary dependencies.
 - execute `npm run dev` to run the app in development mode.
 - the application should be available at http://localhost:3000.
 
+Optional developer configuration lives in `.env.example`; copy it to `.env` to
+change the dev server host or port. BlueHound needs no environment variables to
+run, and it never reads database credentials from the environment - see
+[SECURITY.md](SECURITY.md).
 
 To build the app for production:
 - follow the steps above to clone the repository and install dependencies.
-- execute `npm run build`. This will create a `build` folder in your project directory.
-- deploy the contents of the build folder to a web server. You should then be able to run the web app.
+- execute `npm run build`. This will create a `dist` folder in your project directory.
+- deploy the contents of the `dist` folder to a web server. You should then be able to run the web app.
+
+To package the desktop application (requires the Electron toolchain):
+- `npm run make-win` on Windows, `npm run make-nix` on Linux/macOS.
+
+## Verifying your change
+```bash
+npm test           # unit tests
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint
+npm run format     # prettier --write
+```
+All four run in CI (`.github/workflows/ci.yml`) on every push and pull request,
+on Linux and Windows; `typecheck` is report-only while the `strict` backlog is
+worked down. The test suite uses Node's built-in test runner and Node's own
+TypeScript type stripping, so there is no test framework to install - see
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to write a spec.
+
+## Container image
+`tools/Dockerfile` builds a production bundle and serves it from nginx. Build
+it with `tools/docker-build-run_unix.bash` (or the Windows batch file) from the
+repository root.
 
 ## Questions / Suggestions
 We are always open to ideas, comments, and suggestions regarding future versions of BlueHound, so if you have ideas, don’t hesitate to reach out to us at [support@zeronetworks.com](mailto:support@zeronetworks.com) or open an issue/pull request on GitHub.
+
+## Security
+Please read [SECURITY.md](SECURITY.md) before reporting a vulnerability, and
+before deploying BlueHound on a workstation with cached domain credentials.

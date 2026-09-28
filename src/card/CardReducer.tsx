@@ -73,7 +73,6 @@ export const cardReducer = (state = CARD_INITIAL_STATE, action: { type: any; pay
             return state;
         }
         case UPDATE_QUERY_INFO: {
-            console.log('asdasdasdasd')
             const { pagenumber, index, queryInfo } = payload;
             state = update(state, { queryInfo: queryInfo })
             return state;
@@ -114,19 +113,20 @@ export const cardReducer = (state = CARD_INITIAL_STATE, action: { type: any; pay
         }
         case UPDATE_REPORT_SETTING: {
             const { pagenumber, index, setting, value } = payload;
-            const settings = (state.settings) ? (state.settings) : {};
+            // Copy first: the previous implementation deleted the key on the
+            // object owned by the incoming state, which mutated the store's
+            // state in place and left every other card render looking at a
+            // settings object that had already changed underneath it.
+            const settings = Object.assign({}, state.settings);
 
             // Javascript is amazing, so "" == 0. Instead we check if the string length is zero...
             if (value == undefined || value.toString().length == 0) {
                 delete settings[setting];
-                update(state, { settings: settings });
-                return state;
+            } else {
+                settings[setting] = value;
             }
 
-            const entry = {}
-            entry[setting] = value;
-            state = update(state, { settings: update(settings, entry) })
-            return state;
+            return update(state, { settings: settings });
         }
         case TOGGLE_CARD_SETTINGS: {
             const { pagenumber, index, open } = payload;
