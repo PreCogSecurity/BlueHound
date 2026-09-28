@@ -9,11 +9,15 @@ const path = require('path');
 const { createDriver } = require("use-neo4j");
 const {isZipSync} = require('is-zip-file');
 const AdmZip = require('adm-zip');
-const sanitize = require('sanitize-filename');
 
 const { batch } = require('stream-json/utils/Batch');
 const NewIngestion = require('./newingestion.js');
 const {streamArray} = require("stream-json/streamers/StreamArray");
+const { getLogger } = require('../utils/logger.ts');
+const { safeArchiveEntryName, resolveWithinDirectory } = require('./zipGuard.js');
+const { runCypherStatement, runCypherStatements, IngestionError } = require('./neo4jSession.ts');
+
+const log = getLogger('ingestion');
 
 let driver;
 let filesCounter = 0;
@@ -21,6 +25,7 @@ let numberOfFiles = 0;
 let numberOfFoundFiles = 0;
 let neoVersion;
 let toolId = 0;
+let failedStatements = 0;
 
 const IngestFuncMap = {
     computers: NewIngestion.buildComputerJsonNew,
@@ -33,14 +38,48 @@ const IngestFuncMap = {
     azure: NewIngestion.convertAzureData,
 };
 
+/**
+ * Runs a single write against Neo4j.
+ *
+ * A failure is logged and re-thrown by `runCypherStatement`; it used to be
+ * swallowed here with a bare `.catch(console.log)`, which let BlueHound report
+ * a successful collection while the graph was silently incomplete.
+ */
 const uploadData = async (statement, props) => {
     let session = driver.session();
-    await session.run(statement, {props: props}).catch((err) => {
-        console.log(statement);
-        console.log(err);
-    });
-    await session.close();
+    try {
+        await runCypherStatement(session, statement, {props: props}, log);
+    } finally {
+        await session.close();
+    }
 };
+
+/**
+ * The major version of the connected Neo4j server, or 0 when it is unknown.
+ *
+ * The previous expression was `neoVersion.split(".", 1)[0] >= 5`, and
+ * `Array.prototype.split` with a limit of 1 returns `["5"]`, which coerces to
+ * `NaN` - so the comparison was always false and Neo4j 5 fell through to the
+ * `CALL db.constraints` branch. That procedure was removed in Neo4j 5, which
+ * made every "clear existing data" collection fail on a current server.
+ */
+const getNeoMajorVersion = () => {
+    if (typeof neoVersion !== 'string') {
+        return 0;
+    }
+    const major = parseInt(neoVersion.split('.')[0], 10);
+    return Number.isNaN(major) ? 0 : major;
+};
+
+/** Neo4j >= 4.2 exposes SHOW CONSTRAINTS; older servers use the procedure API. */
+const usesShowConstraints = () => {
+    const major = getNeoMajorVersion();
+    return major >= 5 || (major === 4 && neoVersion.split('.').length > 1 && parseInt(neoVersion.split('.')[1], 10) >= 2);
+};
+
+/** Labels, properties and constraint/index names that are safe to interpolate. */
+const isSafeCypherIdentifier = (identifier) =>
+    typeof identifier === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(identifier);
 
 const getMetaTagQuick = async (filePath) => {
     let size = fs.statSync(filePath).size;
@@ -127,8 +166,23 @@ const unzipFiles = async (files, event) => {
                 for (let entry of zipEntries) {
                     if (!entry.entryName.endsWith('.json')) continue;
 
-                    let sanitizedPath = sanitize(entry.entryName);
-                    let output = path.join(tempPath, sanitizedPath);
+                    // The archive is untrusted input. Every entry name is
+                    // reduced to a flat, traversal-free name and the resulting
+                    // path is re-checked against the extraction directory, so a
+                    // crafted zip cannot write outside of the temp folder.
+                    const sanitizedPath = safeArchiveEntryName(entry.entryName);
+                    if (!sanitizedPath) {
+                        log.warn('Skipped an archive entry with an unsafe path', { archive: filePath, entry: entry.entryName });
+                        event.sender.send("tool-data-error", toolId, 'Skipped an unsafe file name in ' + path.basename(filePath) + ': ' + entry.entryName);
+                        continue;
+                    }
+
+                    const output = resolveWithinDirectory(tempPath, sanitizedPath);
+                    if (!output) {
+                        log.warn('Skipped an archive entry that resolved outside the extraction directory', { archive: filePath, entry: entry.entryName });
+                        continue;
+                    }
+
                     zip.extractEntryTo(entry.entryName, tempPath, false, true, false, sanitizedPath)
                     finalFiles.push({
                         path: output,
@@ -136,6 +190,7 @@ const unzipFiles = async (files, event) => {
                     });
                 }
             } catch (e) {
+                log.error('Could not read a result archive', { archive: filePath, error: e });
                 event.sender.send("tool-data-error", toolId, e)
                 return [];
             }
@@ -184,6 +239,7 @@ const processJson = async (file, event) => {
     ]);
 
     let count = 0;
+    let failedBatches = 0;
     let processor = IngestFuncMap[file.type];
     pipeline.on('data', async (data) => {
         try{
@@ -245,21 +301,39 @@ const processJson = async (file, event) => {
             }
 
             file.progress = count
-
-            pipeline.resume()
         }catch (e){
-            console.error(e)
+            // A failed batch is counted and reported, never silently dropped:
+            // the analyst needs to know their graph is incomplete.
+            failedBatches += 1;
+            failedStatements += 1;
+            log.error('Could not process a batch of a result file; that batch was NOT written', {
+                file: file.path,
+                type: file.type,
+                error: e,
+            });
+        } finally {
+            // Without this the stream stayed paused forever: 'end' never fired,
+            // post processing never ran and the collection UI hung until the
+            // analyst gave up.
+            pipeline.resume();
         }
         return null
     })
 
-    pipeline.on('end', () => {
-        //event.sender.send("tool-data", 0, 'Finished uploading file: ' + file.path + '\n')
+    const finishFile = () => {
         if (file.delete) {
-            fs.unlinkSync(file.path)
+            try {
+                fs.unlinkSync(file.path)
+            } catch (e) {
+                log.warn('Could not delete a temporary result file', { file: file.path, error: e });
+            }
         }
 
-        console.timeEnd('IngestTime')
+        if (failedBatches > 0) {
+            log.error('A result file was only partially written to Neo4j', { file: file.path, failedBatches });
+            event.sender.send("tool-data-error", toolId, 'Some data in ' + path.basename(file.path) + ' could not be written to the database.');
+        }
+
         //emitter.emit('refreshDBData')
 
         filesCounter += 1;
@@ -269,7 +343,15 @@ const processJson = async (file, event) => {
         }
 
         return null
-    })
+    };
+
+    pipeline.on('error', (error) => {
+        log.error('A result file could not be read to the end', { file: file.path, error });
+        event.sender.send("tool-data-error", toolId, 'Could not read ' + path.basename(file.path) + ': ' + error);
+        finishFile();
+    });
+
+    pipeline.on('end', finishFile);
 };
 
 const postProcessUpload = async (event) => {
@@ -278,29 +360,35 @@ const postProcessUpload = async (event) => {
     const highValueSids = ["-544", "-500", "-512", "-516", "-518", "-519", "1-5-9", "-526", "-527"]
     const highValueStatement = "UNWIND $sids AS sid MATCH (n:Base) WHERE n.objectid ENDS WITH sid SET n.highvalue=true"
 
-    await session.run(highValueStatement, {sids: highValueSids}).catch((err) => {
-        console.log(err);
-    });
-
     const baseOwnedStatement = "MATCH (n) WHERE n:User or n:Computer AND NOT EXISTS(n.owned) SET n.owned = false"
-    await session.run(baseOwnedStatement, null).catch((err) => {
-        console.log(err);
-    });
 
     const baseHighValueStatement = "MATCH (n:Base) WHERE NOT EXISTS(n.highvalue) SET n.highvalue = false"
-    await session.run(baseHighValueStatement, null).catch((err) => {
-        console.log(err);
-    });
 
     const dUsersSids = ["S-1-1-0", "S-1-5-11"]
     const domainUsersAssociationStatement = "MATCH (n:Group) WHERE n.objectid ENDS WITH '-513' OR n.objectid ENDS WITH '-515' WITH n UNWIND $sids AS sid MATCH (m:Group) WHERE m.objectid ENDS WITH sid MERGE (n)-[:MemberOf]->(m)"
-    await session.run(domainUsersAssociationStatement, {sids: dUsersSids}).catch((err) => {
-        console.log(err);
-    });
 
-    await session.close();
-    console.log("Post processing done")
-    event.sender.send("tool-data", toolId, 'Upload done, ' + numberOfFiles + '/' + numberOfFoundFiles + ' results files parsed successfully.')
+    // Post processing used to log-and-continue on every failure, so a broken
+    // database could end up with no high-value markers, no owned flags and no
+    // default domain groups - and every report built on them was wrong.
+    try {
+        await runCypherStatements(session, [
+            { statement: highValueStatement, params: { sids: highValueSids } },
+            { statement: baseOwnedStatement, params: null },
+            { statement: baseHighValueStatement, params: null },
+            { statement: domainUsersAssociationStatement, params: { sids: dUsersSids } },
+        ], log);
+    } catch (e) {
+        const message = e instanceof IngestionError
+            ? 'Post processing failed: ' + e.message
+            : 'Post processing failed: ' + e;
+        log.error(message);
+        event.sender.send("tool-data-error", toolId, message);
+    } finally {
+        await session.close();
+    }
+
+    log.info('Post processing finished', { files: numberOfFiles, failedStatements });
+    event.sender.send("tool-data", toolId, 'Upload done, ' + numberOfFiles + '/' + numberOfFoundFiles + ' results files parsed successfully.' + (failedStatements > 0 ? ' ' + failedStatements + ' batch(es) could not be written - see the log.' : ''))
     event.sender.send("sharphound-upload-done", toolId, numberOfFiles);
 }
 
@@ -340,7 +428,7 @@ async function dropConstraints(event) {
     let constraints = [];
     let result = [];
 
-    if (neoVersion.startsWith('4.3') || neoVersion.startsWith('4.4') || neoVersion.split(".", 1)[0] >= 5) {
+    if (usesShowConstraints()) {
         result = await session.run('SHOW CONSTRAINTS YIELD name')
     } else {
         result = await session.run('CALL db.constraints')
@@ -349,7 +437,7 @@ async function dropConstraints(event) {
     for (let record of result.records){
         let constraint = record.get(0)
         let query;
-        if (neoVersion.startsWith('3.')){
+        if (getNeoMajorVersion() === 3){
             query = 'DROP ' + constraint
         }else{
             query = 'DROP CONSTRAINT ' + constraint
@@ -372,8 +460,8 @@ async function dropIndexes(event) {
     let indexes = [];
     let result = [];
 
-    if (neoVersion.startsWith('4.3') || neoVersion.startsWith('4.4') || neoVersion.split(".", 1)[0] >= 5) {
-        result = await session.run('SHOW CONSTRAINTS')
+    if (usesShowConstraints()) {
+        result = await session.run('SHOW INDEXES YIELD name')
     } else {
         result = await session.run('CALL db.constraints')
     }
@@ -381,7 +469,7 @@ async function dropIndexes(event) {
     for (let record of result.records){
         let constraint = record.get(0)
         let query;
-        if (neoVersion.startsWith('3.')){
+        if (getNeoMajorVersion() === 3){
             query = 'DROP ' + constraint
         }else{
             query = 'DROP INDEX ' + constraint
@@ -429,37 +517,54 @@ async function setSchema(event) {
     }
 
     let session = driver.session();
+    const useModernSchemaSyntax = getNeoMajorVersion() >= 5;
 
     for (let label of labels){
         for (let constraint of schema[label].constraints){
-            let props = {
-                name: constraint.name,
-                label: [label],
-                properties: [constraint.property],
-                provider: constraint.provider
+            // Identifiers are interpolated into DDL, so they are validated
+            // before use rather than trusted because they are "internal".
+            if (!isSafeCypherIdentifier(constraint.name) || !isSafeCypherIdentifier(label) || !isSafeCypherIdentifier(constraint.property)) {
+                log.warn('Skipped a schema entry with an unsafe identifier', { constraint: constraint.name, label });
+                continue;
             }
             try{
-
-                await session.run("CALL db.createUniquePropertyConstraint($name, $label, $properties, $provider)", props)
+                if (useModernSchemaSyntax) {
+                    // `CALL db.createUniquePropertyConstraint` was removed in
+                    // Neo4j 5; without this branch a 5.x database silently
+                    // ended up with no indexes at all.
+                    await session.run(`CREATE CONSTRAINT ${constraint.name} IF NOT EXISTS FOR (n:${label}) REQUIRE n.${constraint.property} IS UNIQUE`)
+                } else {
+                    await session.run("CALL db.createUniquePropertyConstraint($name, $label, $properties, $provider)", {
+                        name: constraint.name,
+                        label: [label],
+                        properties: [constraint.property],
+                        provider: constraint.provider
+                    })
+                }
             }catch (e) {
-                //console.error(e)
+                log.warn('Could not create a uniqueness constraint', { name: constraint.name, error: e });
             }
         }
 
         for (let index of schema[label].indexes) {
-            let props = {
-                name: index.name,
-                label: [label],
-                properties: [index.property],
-                provider: index.provider
+            if (!isSafeCypherIdentifier(index.name) || !isSafeCypherIdentifier(label) || !isSafeCypherIdentifier(index.property)) {
+                log.warn('Skipped a schema entry with an unsafe identifier', { index: index.name, label });
+                continue;
             }
             try{
-
-                await session.run("CALL db.createIndex($name, $label, $properties, $provider)", props)
+                if (useModernSchemaSyntax) {
+                    await session.run(`CREATE INDEX ${index.name} IF NOT EXISTS FOR (n:${label}) ON (n.${index.property})`)
+                } else {
+                    await session.run("CALL db.createIndex($name, $label, $properties, $provider)", {
+                        name: index.name,
+                        label: [label],
+                        properties: [index.property],
+                        provider: index.provider
+                    })
+                }
             }catch (e) {
-                //console.error(e)
+                log.warn('Could not create an index', { name: index.name, error: e });
             }
-
         }
     }
 
@@ -506,6 +611,7 @@ async function handleSharpHoundResultsUpload(event, toolIdParam, resultsPath, co
 
         numberOfFiles = 0;
         filesCounter = 0;
+        failedStatements = 0;
 
         if (fs.lstatSync(resultsPath).isFile()) {
             let validFiles = [];

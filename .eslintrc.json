@@ -1,0 +1,77 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["@typescript-eslint", "react", "react-hooks"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "no-undef": "off",
+    "no-unused-vars": "off",
+    "no-console": "off",
+    "no-empty": ["warn", { "allowEmptyCatch": true }],
+    "no-useless-escape": "warn",
+    "no-prototype-builtins": "warn",
+    "no-constant-condition": ["warn", { "checkLoops": false }],
+    "no-control-regex": "warn",
+    "eqeqeq": "off",
+    "curly": "off",
+    "semi": "off",
+    "quotes": "off",
+    "react/prop-types": "off",
+    "react/no-unescaped-entities": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/display-name": "off",
+    "react/no-danger": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "args": "none", "varsIgnorePattern": "^_", "ignoreRestSiblings": true }
+    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off"
+  },
+  "overrides": [
+    {
+      "files": ["*.js", "*.mjs", "*.cjs"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off",
+        "no-unused-vars": ["warn", { "args": "none" }]
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/tests/**"],
+      "rules": {
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "no-undef": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "out/",
+    "build/",
+    "src/chart/sigma.min.js",
+    "src/chart/sigma.helpers.graph.min.js"
+  ]
+}

@@ -3,6 +3,11 @@ const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
 const { handleSharpHoundResultsUpload } = require('./collectors/BloodHoundUploader.tsx');
+const { getLogger } = require('./utils/logger.ts');
+const { safeExternalUrl } = require('./utils/externalLink.ts');
+const { buildScheduleTaskArgs } = require('./utils/scheduledTask.ts');
+const { normaliseToolInvocation } = require('./utils/collectorLaunch.ts');
+const log = getLogger('main');
 const logMessages = [];
 
 let mainWindow;
@@ -21,8 +26,20 @@ function createWindow () {
         height: 600,
         //titleBarStyle: "hidden",
         webPreferences: {
-            nodeIntegration: true,
+            // The renderer never needs Node: every privileged operation goes
+            // through the narrow contextBridge API in src/preload.js. Leaving
+            // nodeIntegration on meant that any script injection into report
+            // text, a shared community dashboard or a markdown description was
+            // remote code execution with the analyst's privileges.
+            nodeIntegration: false,
             contextIsolation: true,
+            sandbox: true,
+            nodeIntegrationInWorker: false,
+            nodeIntegrationInSubFrames: false,
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            experimentalFeatures: false,
+            spellcheck: false,
             preload: path.join(__dirname, 'preload.js')
         },
     })
@@ -45,16 +62,43 @@ function createWindow () {
 
     import('shell-env').then(envPath => { shellEnvironments = envPath.shellEnvSync(); })
 
-    // open links in a browser instead of in the electron window
+    // open links in a browser instead of in the electron window, but only for
+    // links that are actually web links: shell.openExternal hands the URL to an
+    // OS protocol handler, so file://, smb:// or ms-msdt:// from a report
+    // description would be a local file read or a code-execution primitive.
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        shell.openExternal(url);
+        const safeUrl = safeExternalUrl(url);
+        if (safeUrl) {
+            shell.openExternal(safeUrl);
+        } else {
+            log.warn('Blocked a link that is not a plain web URL', { url });
+        }
         return { action: 'deny' };
     });
+
+    // BlueHound is a single-window application: any attempt to navigate the
+    // window away from the bundled UI is either a bug or an injection attempt.
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        event.preventDefault();
+        log.warn('Blocked an in-app navigation', { url });
+    });
+
+    // BlueHound needs no device permissions. Denying by default stops a
+    // malicious dashboard from silently turning on the microphone or webcam.
+    mainWindow.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => {
+        log.warn('Blocked a device permission request');
+        callback(false);
+    });
+    mainWindow.webContents.session.setPermissionCheckHandler(() => false);
 
     mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
         let fileName = sourceId.replace(/^.*[\\\/]/, '');
         if (os.platform() === 'win32') fileName = sourceId.split('\\')[-1];
         logMessages.push([logLevel[level], message, fileName].join(' | '));
+    });
+
+    mainWindow.webContents.on('render-process-gone', (_event, details) => {
+        log.error('The renderer process stopped unexpectedly', details);
     });
 }
 
@@ -126,7 +170,17 @@ function getPythonBinaryName() {
 }
 
 const runTool = async (event, toolId, toolPath, tookArgs, workingDirectory) => {
-    const result = spawn(toolPath, tookArgs, { env: shellEnvironments, cwd: workingDirectory })
+    const invocation = normaliseToolInvocation(toolPath, tookArgs);
+    if (!invocation) {
+        log.warn('Rejected a collector launch with invalid parameters', { toolId });
+        event.sender.send("tool-data-error", toolId, 'Invalid tool path or arguments for this collector.');
+        event.sender.send("tool-data-done", toolId, -1, workingDirectory);
+        return;
+    }
+
+    // No `shell: true` anywhere in the collector launch path: arguments stay
+    // discrete argv entries and are never interpreted by cmd.exe or sh.
+    const result = spawn(invocation.path, invocation.args, { env: shellEnvironments, cwd: workingDirectory })
     runningProcesses[toolId] = result;
 
     result.stdout.on('data', (data) => {
@@ -138,27 +192,31 @@ const runTool = async (event, toolId, toolPath, tookArgs, workingDirectory) => {
     });
 
     result.on('error', function (err) { // needed for catching ENOENT
+        log.error('Collector failed to start', { toolId, error: err });
         event.sender.send("tool-data-error", toolId, err)
     });
 
     result.on('close', (code) => {
-        event.sender.send("tool-data-done", toolId, code, path.dirname(toolPath))
+        event.sender.send("tool-data-done", toolId, code, path.dirname(invocation.path))
         delete runningProcesses[toolId];
     });
 }
 
 ipcMain.handle("run-tool", async (event, toolId, toolPath, toolArgs) => {
     import('shell-env').then(envPath => { shellEnvironments = envPath.shellEnvSync(); })
-    const workingDirectory = path.dirname(toolPath);
+    const workingDirectory = typeof toolPath === 'string' ? path.dirname(toolPath) : '.';
     await runTool(event, toolId, toolPath, toolArgs, workingDirectory);
 })
 
 const runToolsInSerial = async (event, toolsData) => {
+    if (!Array.isArray(toolsData) || toolsData.length === 0) {
+        return;
+    }
     const tool = toolsData[0]
     let toolPath = tool["path"]
     let toolArgs = tool["args"]
     let toolType = tool["toolType"]
-    const workingDirectory = path.dirname(toolPath);
+    const workingDirectory = typeof toolPath === 'string' ? path.dirname(toolPath) : '.';
 
     if (toolType == 1) {
         [toolArgs, toolPath] = paramsForPythonTool(event, toolArgs, toolPath);
@@ -172,7 +230,16 @@ const runToolsInSerial = async (event, toolsData) => {
         }
     }
 
-    const result = spawn(toolPath, toolArgs, { env: shellEnvironments, cwd: workingDirectory })
+    const invocation = normaliseToolInvocation(toolPath, toolArgs);
+    if (!invocation) {
+        log.warn('Rejected a collector launch with invalid parameters', { toolId: tool.toolId });
+        if (toolsData.length > 1) {
+            runToolsInSerial(event, toolsData.slice(1));
+        }
+        return;
+    }
+
+    const result = spawn(invocation.path, invocation.args, { env: shellEnvironments, cwd: workingDirectory })
     runningProcesses[tool.toolId] = result;
 
     result.stdout.on('data', (data) => {
@@ -184,11 +251,12 @@ const runToolsInSerial = async (event, toolsData) => {
     });
 
     result.on('error', function (err) { // needed for catching ENOENT
+        log.error('Collector failed to start', { toolId: tool.toolId, error: err });
         event.sender.send("tool-data-error", tool.toolId, err)
     });
 
     result.on('close', (code) => {
-        event.sender.send("tool-data-done", tool.toolId, code, path.dirname(toolPath))
+        event.sender.send("tool-data-done", tool.toolId, code, path.dirname(invocation.path))
         delete runningProcesses[tool.toolId];
         if (toolsData.length > 1) { runToolsInSerial(event, toolsData.slice(1)) } ;
     });
@@ -217,14 +285,26 @@ function paramsForPythonTool(event, toolArgs, toolPath) {
 ipcMain.handle("run-python", async (event, toolId, toolPath, toolArgs) => {
     import('shell-env').then(envPath => { shellEnvironments = envPath.shellEnvSync(); })
     const [pythonArgs, pythonPath] = paramsForPythonTool(event, toolArgs, toolPath);
-    const workingDirectory = path.dirname(toolPath)
+    const workingDirectory = typeof toolPath === 'string' ? path.dirname(toolPath) : '.';
     if (pythonArgs && pythonPath) {
         await runTool(event, toolId, pythonPath, pythonArgs, workingDirectory);
     }
 })
 
 ipcMain.handle("kill-process", async (event, toolId) => {
-    runningProcesses[toolId].kill('SIGKILL');
+    const running = runningProcesses[toolId];
+    // The process can already have exited (or never started) when the analyst
+    // hits stop twice; the previous code threw a TypeError in the main process.
+    if (!running) {
+        log.info('Stop was requested for a collector that is not running', { toolId });
+        event.sender.send("tool-killed", toolId);
+        return;
+    }
+    try {
+        running.kill('SIGKILL');
+    } catch (err) {
+        log.error('Could not stop the collector', { toolId, error: err });
+    }
     delete runningProcesses[toolId];
     event.sender.send("tool-killed", toolId);
 })
@@ -243,35 +323,48 @@ ipcMain.handle("add-scheduled-task", async (event, scheduleFrequency, dayOfWeek,
     if (os.platform() != 'win32') {
         dialog.showMessageBox(mainWindow, {
             title: 'OS not supported',
-            buttons: ['Dismiss'],
             type: 'error',
+            buttons: ['Dismiss'],
             message: 'Adding scheduled task is currently only supported on Windows.\n\n' +
                 'The --collection-only argument can be used to manually schedule BlueHound on non-Windows hosts.',
         });
         return;
     }
 
-    let args = [];
-    const taskName = '"BlueHound Collection"';
-    const appPathWithArgs = `"'${path.resolve('.', 'BlueHound.exe')}' --collection-only"`;
+    // Every parameter below arrives from the renderer, whose state can be
+    // seeded by an imported or shared BlueHound configuration. They are
+    // validated against an allow-list and passed as discrete argv entries, so
+    // nothing here can be re-parsed by a shell.
+    const args = buildScheduleTaskArgs({ scheduleFrequency, dayOfWeek, dayOfMonth, scheduleTime },
+        path.resolve('.', 'BlueHound.exe'));
 
-    if (scheduleFrequency == 'DAILY') {
-        args = ['/CREATE', '/F', '/SC DAILY', '/TN ' + taskName, '/TR ' + appPathWithArgs, '/ST ' + scheduleTime];
-    } else if (scheduleFrequency == 'WEEKLY') {
-        args = ['/CREATE', '/F', '/SC WEEKLY', '/D ' + dayOfWeek, '/TN ' + taskName, '/TR ' + appPathWithArgs, '/ST ' + scheduleTime];
-    } else if (scheduleFrequency == 'MONTHLY') {
-        args = ['/CREATE', '/F', '/SC MONTHLY', '/D ' + dayOfMonth, '/TN ' + taskName, '/TR ' + appPathWithArgs, '/ST ' + scheduleTime];
+    if (!args) {
+        log.warn('Rejected a scheduled task request with invalid parameters', { scheduleFrequency, dayOfWeek, dayOfMonth, scheduleTime });
+        event.sender.send("tool-notification", 'Invalid schedule: the frequency, date or time is not a valid choice.');
+        return;
     }
 
-    const result = spawn("SCHTASKS", args, { shell: true });
+    log.info('Creating a scheduled collection task', { scheduleFrequency, dayOfWeek, dayOfMonth, scheduleTime });
+
+    // No `shell: true`: schtasks.exe is resolved by the OS and the arguments
+    // are passed through verbatim.
+    const result = spawn("SCHTASKS", args);
+
+    result.stderr.on('data', (data) => {
+        log.error('SCHTASKS reported an error', { output: data.toString() });
+    });
 
     result.on('error', function (err) { // needed for catching ENOENT
-        event.sender.send("tool-notification", err)
+        log.error('Could not run SCHTASKS', err);
+        event.sender.send("tool-notification", 'Failed to add the scheduled task.');
     });
 
     result.on('close', (code) => {
         if (code == 0) {
             event.sender.send("tool-notification", "Scheduled task added successfully.")
+        } else {
+            log.error('SCHTASKS exited with a non-zero status', { code });
+            event.sender.send("tool-notification", 'Failed to add the scheduled task.');
         }
     });
 })
