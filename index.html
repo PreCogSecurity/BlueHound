@@ -289,43 +289,216 @@
             background: #000;
         }
 
-        /* ===== Android Desktop (copy.sh/v86 iframe) ===== */
-        .android-iframe {
-            width: 100%;
+        /* ===== BlueHound Web IDE ===== */
+        .ide-shell {
             flex: 1;
-            border: none;
-            border-radius: 4px;
-            background: #000;
-            transition: transform 0.2s;
-        }
-        .android-controls {
             display: flex;
-            gap: 0.5rem;
+            min-height: 0;
+        }
+        .ide-side {
+            width: 172px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border);
+            padding: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            overflow-y: auto;
+            background: rgba(5, 7, 15, 0.5);
+        }
+        .ide-side h5 {
+            font-size: 0.5rem;
+            color: var(--dim);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 0.2rem 0.2rem 0.3rem;
+        }
+        .ide-lab {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            padding: 0.3rem 0.5rem;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 8px;
-            margin-top: 0.3rem;
+            gap: 0.3rem;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--dim);
+            text-align: left;
+            padding: 0.3rem 0.4rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.56rem;
+            font-family: var(--font);
+            transition: 0.15s;
+        }
+        .ide-lab:hover {
+            color: var(--text);
+            background: rgba(26, 42, 90, 0.4);
+        }
+        .ide-lab.active {
+            color: var(--accent);
+            border-color: var(--border);
+            background: var(--border);
+        }
+        .ide-lab .ide-lab-score {
+            font-size: 0.5rem;
+            color: #33ff99;
+        }
+        .ide-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+        }
+        .ide-lab-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
             flex-shrink: 0;
         }
-        .android-controls .btn-sm {
-            background: var(--border);
-            border: none;
-            color: var(--text);
-            padding: 0.15rem 0.6rem;
-            border-radius: 20px;
-            cursor: pointer;
+        .ide-lab-header h4 {
+            font-size: 0.65rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .ide-lab-header p {
             font-size: 0.55rem;
-            font-family: var(--font);
+            color: var(--dim);
+            flex: 1;
+            min-width: 180px;
         }
-        .android-controls .btn-sm:hover {
-            background: #2a3a7a;
+        .ide-editor-wrap {
+            flex: 1.1;
+            display: flex;
+            min-height: 0;
         }
-        .android-controls .status-text {
-            font-size: 0.5rem;
+        .ide-gutter {
+            width: 2.6rem;
+            background: #04060d;
+            color: #3a5a8a;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.45;
+            padding: 0.4rem 0.3rem;
+            text-align: right;
+            user-select: none;
+            overflow: hidden;
+            border-right: 1px solid var(--border);
+            white-space: pre;
+        }
+        #ideEditor {
+            flex: 1;
+            background: #05070f;
+            color: #b6f3c1;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 0.4rem 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.45;
+            white-space: pre;
+            overflow: auto;
+            tab-size: 2;
+        }
+        .ide-bottom {
+            flex: 1;
+            display: flex;
+            border-top: 1px solid var(--border);
+            min-height: 110px;
+        }
+        .ide-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .ide-panel + .ide-panel {
+            border-left: 1px solid var(--border);
+        }
+        .ide-panel-head {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.2rem 0.45rem;
+            background: rgba(0, 0, 0, 0.35);
+            font-size: 0.52rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+        }
+        .ide-panel-head > button {
+            margin-left: auto;
+        }
+        .ide-output {
+            flex: 1;
+            overflow: auto;
+            background: #05070f;
+            font-family: 'Courier New', monospace;
+            font-size: 0.6rem;
+            color: #9fe8ff;
+            padding: 0.4rem 0.5rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .ide-output .ok { color: #33ff99; }
+        .ide-output .err { color: #ff7799; }
+        .ide-output .warn { color: #ffcc33; }
+        .ide-terminal-input {
+            display: flex;
+            gap: 0.3rem;
+            padding: 0.3rem 0.4rem;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+        .ide-terminal-input span {
+            color: #33ff99;
+            font-family: monospace;
+            font-size: 0.65rem;
+            align-self: center;
+        }
+        .ide-terminal-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #c8e6ff;
+            font-family: monospace;
+            font-size: 0.65rem;
+        }
+        .ide-controls {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            padding: 0.3rem 0.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .ide-controls .status-text {
+            font-size: 0.55rem;
             color: var(--dim);
             margin-left: auto;
+        }
+        .ide-score {
+            font-size: 0.55rem;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            border-radius: 12px;
+            padding: 0.1rem 0.5rem;
+        }
+        @media (max-width: 700px) {
+            .ide-side {
+                width: 120px;
+            }
+            .ide-bottom {
+                flex-direction: column;
+            }
         }
 
         /* ===== Apps ===== */
@@ -593,7 +766,7 @@
 
         <!-- Dock -->
         <nav class="dock" id="dock">
-            <button class="icon active" data-app="android"><i class="fas fa-mobile-alt"></i> Android</button>
+            <button class="icon active" data-app="ide"><i class="fas fa-terminal"></i> Web IDE</button>
             <button class="icon" data-app="bluehound"><i class="fas fa-robot"></i> BlueHound</button>
             <button class="icon" data-app="tools"><i class="fas fa-tools"></i> Tools</button>
             <button class="icon" data-app="store"><i class="fas fa-store"></i> Store</button>
@@ -604,36 +777,53 @@
 
         <!-- Windows -->
         <div class="windows" id="windowsContainer">
-            <!-- Android Desktop: copy.sh/v86 Android-x86 (iframe) -->
-            <div class="window active" id="win-android" style="width:94%;height:92%;top:4%;left:3%;">
+            <!-- BlueHound Web IDE -->
+            <div class="window active" id="win-ide" style="width:96%;height:94%;top:3%;left:2%;">
                 <div class="titlebar">
-                    <span class="title"><i class="fas fa-mobile-alt"></i> Android-x86 4.4</span>
+                    <span class="title"><i class="fas fa-terminal"></i> BlueHound Web IDE <span style="color:var(--dim);font-weight:400;">· cybersecurity playground</span></span>
                     <div class="actions">
-                        <button onclick="toggleAndroidFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
-                        <button onclick="closeWindow('android')">✕</button>
+                        <button onclick="toggleIdeFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
+                        <button onclick="closeWindow('ide')">✕</button>
                     </div>
                 </div>
-                <div class="body" style="padding:0; overflow:hidden; display:flex; flex-direction:column;">
-                    <div id="androidRuntime" style="flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;overflow:hidden;">
-        <div style="text-align:center;max-width:520px;padding:1.5rem;color:#c8e6ff;">
-          <div style="font-size:3rem;color:#33ccff;margin-bottom:.8rem;">▣</div>
-          <h3 style="font-weight:500;margin-bottom:.5rem;">Persistent Emulator Runtime</h3>
-          <p style="font-size:.7rem;color:#6688bb;line-height:1.6;">
-            Emulator state persistence is enabled. This single-file shell stores Precog state locally.
-            A fully embedded Android/v86 runtime additionally requires the v86 WASM, BIOS and Android disk
-            image assets; those are not present in the supplied HTML and are therefore not falsely bundled here.
-          </p>
-          <div id="emulatorStateBadge" style="margin-top:1rem;font-size:.6rem;color:#33ff99;">LOCAL STATE READY</div>
-        </div>
-      </div>
-                    <div class="android-controls">
-                        <button class="btn-sm" onclick="toggleAndroidFullscreen()"><i class="fas fa-expand"></i> Fullscreen</button>
-                        <button class="btn-sm" onclick="androidZoomIn()"><i class="fas fa-plus"></i> Zoom In</button>
-                        <button class="btn-sm" onclick="androidZoomOut()"><i class="fas fa-minus"></i> Zoom Out</button>
-                        <button class="btn-sm" onclick="androidZoomReset()"><i class="fas fa-undo"></i> Reset</button>
-                         <button class="btn-sm" onclick="PrecogPersistence.snapshot()"><i class="fas fa-save"></i> Save State</button>
-                         <button class="btn-sm" onclick="PrecogPersistence.restore()"><i class="fas fa-history"></i> Restore</button>
-                        <span class="status-text" id="androidZoomStatus">100%</span>
+                <div class="body" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+                    <div class="ide-shell">
+                        <aside class="ide-side" id="ideLabList">
+                            <h5>Detection Labs</h5>
+                        </aside>
+                        <div class="ide-main">
+                            <div class="ide-lab-header">
+                                <h4 id="ideLabTitle">Loading…</h4>
+                                <p id="ideLabBrief">Select a lab.</p>
+                                <span class="ide-score" id="ideScore">0 pts</span>
+                            </div>
+                            <div class="ide-editor-wrap">
+                                <div class="ide-gutter" id="ideGutter">1</div>
+                                <textarea id="ideEditor" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+                            </div>
+                            <div class="ide-bottom">
+                                <div class="ide-panel">
+                                    <div class="ide-panel-head"><i class="fas fa-play-circle"></i> Output / Checks<button class="btn-sm" id="ideClearOutput">Clear</button></div>
+                                    <div class="ide-output" id="ideOutput">// Press "Run checks" to validate your solution.</div>
+                                </div>
+                                <div class="ide-panel">
+                                    <div class="ide-panel-head"><i class="fas fa-terminal"></i> Lab terminal · TEST-NET-1 (192.0.2.0/24) · simulated</div>
+                                    <div class="ide-output" id="ideTerminal">BlueHound lab shell — fully synthetic environment.
+No packets leave your browser and no real host is contacted.
+Type 'help' to list commands.
+</div>
+                                    <div class="ide-terminal-input"><span>lab&gt;</span><input id="ideTerminalInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="help" /></div>
+                                </div>
+                            </div>
+                            <div class="ide-controls">
+                                <button class="btn-primary" id="ideRun"><i class="fas fa-play"></i> Run checks</button>
+                                <button class="btn-sm" id="ideReset"><i class="fas fa-undo"></i> Reset lab</button>
+                                <button class="btn-sm" id="ideHint"><i class="fas fa-lightbulb"></i> Hint</button>
+                                <button class="btn-sm" onclick="PrecogPersistence.snapshot()"><i class="fas fa-save"></i> Save State</button>
+                                <button class="btn-sm" onclick="PrecogPersistence.restore()"><i class="fas fa-history"></i> Restore</button>
+                                <span class="status-text" id="ideStatus">LOCAL STATE READY</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -835,9 +1025,9 @@
             if (win) win.classList.remove('active');
             const active = document.querySelector('.window.active');
             if (!active) {
-                const term = document.getElementById('win-android');
+                const term = document.getElementById('win-ide');
                 if (term) term.classList.add('active');
-                document.querySelector('.dock .icon[data-app="android"]')?.classList.add('active');
+                document.querySelector('.dock .icon[data-app="ide"]')?.classList.add('active');
             }
         };
 
@@ -895,51 +1085,10 @@
         updateClock();
 
         // ================================================================
-        //  ANDROID IFRAME CONTROLS (Zoom & Fullscreen)
+        //  WEB IDE CONTROLS (Fullscreen)
         // ================================================================
-        let androidZoomLevel = 1.0;
-        const ANDROID_ZOOM_STEP = 0.1;
-        const ANDROID_MIN_ZOOM = 0.3;
-        const ANDROID_MAX_ZOOM = 2.0;
-
-        function getAndroidIframe() {
-            return document.getElementById('androidRuntime');
-        }
-
-        function applyAndroidZoom() {
-            const runtime = getAndroidIframe();
-            const screen = document.getElementById('screen_container');
-            if (screen) {
-                screen.style.transform = `scale(${androidZoomLevel})`;
-                screen.style.transformOrigin = 'top left';
-            } else if (runtime) {
-                runtime.style.transform = `scale(${androidZoomLevel})`;
-                runtime.style.transformOrigin = 'top left';
-            }
-            document.getElementById('androidZoomStatus').textContent = Math.round(androidZoomLevel * 100) + '%';
-        }
-
-        window.androidZoomIn = function() {
-            if (androidZoomLevel < ANDROID_MAX_ZOOM) {
-                androidZoomLevel = Math.min(androidZoomLevel + ANDROID_ZOOM_STEP, ANDROID_MAX_ZOOM);
-                applyAndroidZoom();
-            }
-        };
-
-        window.androidZoomOut = function() {
-            if (androidZoomLevel > ANDROID_MIN_ZOOM) {
-                androidZoomLevel = Math.max(androidZoomLevel - ANDROID_ZOOM_STEP, ANDROID_MIN_ZOOM);
-                applyAndroidZoom();
-            }
-        };
-
-        window.androidZoomReset = function() {
-            androidZoomLevel = 1.0;
-            applyAndroidZoom();
-        };
-
-        window.toggleAndroidFullscreen = function() {
-            const container = document.getElementById('win-android');
+        window.toggleIdeFullscreen = function() {
+            const container = document.getElementById('win-ide');
             if (!container) return;
             if (!document.fullscreenElement) {
                 container.requestFullscreen?.() || container.webkitRequestFullscreen?.() || container.msRequestFullscreen?.();
@@ -947,22 +1096,6 @@
                 document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
             }
         };
-
-        document.addEventListener('fullscreenchange', updateFullscreenIcon);
-        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
-        document.addEventListener('msfullscreenchange', updateFullscreenIcon);
-
-        function updateFullscreenIcon() {
-            const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-            const btn = document.querySelector('#win-android .titlebar .actions button:first-child i');
-            if (btn) {
-                btn.className = isFull ? 'fas fa-compress' : 'fas fa-expand';
-            }
-            const btn2 = document.querySelector('#win-android .android-controls .btn-sm:first-child i');
-            if (btn2) {
-                btn2.className = isFull ? 'fas fa-compress' : 'fas fa-expand';
-            }
-        }
 
         // ================================================================
         //  GAMES TAB FALLBACK
@@ -1335,34 +1468,6 @@
                 }
             }
 
-            async function putEmulatorState(state) {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(PRECOG_STORE, 'readwrite');
-                    tx.objectStore(PRECOG_STORE).put(state, 'emulator-state');
-                    tx.oncomplete = resolve;
-                    tx.onerror = () => reject(tx.error);
-                });
-            }
-            async function getEmulatorState() {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(PRECOG_STORE, 'readonly');
-                    const req = tx.objectStore(PRECOG_STORE).get('emulator-state');
-                    req.onsuccess = () => resolve(req.result || null);
-                    req.onerror = () => reject(req.error);
-                });
-            }
-            async function clearEmulatorState() {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(PRECOG_STORE, 'readwrite');
-                    tx.objectStore(PRECOG_STORE).delete('emulator-state');
-                    tx.oncomplete = resolve;
-                    tx.onerror = () => reject(tx.error);
-                });
-            }
-
             async function putState(state) {
                 const clean = JSON.parse(JSON.stringify(state));
                 try {
@@ -1394,8 +1499,7 @@
                     version: 3,
                     savedAt: new Date().toISOString(),
                     windows,
-                    activeApp: document.querySelector('.dock .icon.active')?.dataset.app || 'android',
-                    androidZoomLevel,
+                    activeApp: document.querySelector('.dock .icon.active')?.dataset.app || 'ide',
                     chat: document.getElementById('chatBox')?.innerHTML || '',
                     inputs: [...document.querySelectorAll('input[id]')].reduce((a, el) => {
                         a[el.id] = el.value; return a;
@@ -1413,7 +1517,7 @@
             async function save() {
                 const state = uiState();
                 await putState(state);
-                const badge = document.getElementById('emulatorStateBadge');
+                const badge = document.getElementById('ideStatus');
                 if (badge) badge.textContent = 'LOCAL STATE SAVED · ' + new Date().toLocaleTimeString();
                 return state;
             }
@@ -1437,11 +1541,6 @@
                     });
                 }
 
-                if (typeof state.androidZoomLevel === 'number') {
-                    androidZoomLevel = state.androidZoomLevel;
-                    applyAndroidZoom();
-                }
-
                 if (state.chat && document.getElementById('chatBox')) {
                     document.getElementById('chatBox').innerHTML = state.chat;
                 }
@@ -1451,14 +1550,14 @@
                     if (el) el.value = value;
                 });
 
-                const app = state.activeApp || 'android';
+                const app = state.activeApp || 'ide';
                 document.querySelectorAll('.dock .icon').forEach(b => b.classList.remove('active'));
                 document.querySelector(`.dock .icon[data-app="${app}"]`)?.classList.add('active');
 
                 document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
                 document.getElementById('win-' + app)?.classList.add('active');
 
-                const badge = document.getElementById('emulatorStateBadge');
+                const badge = document.getElementById('ideStatus');
                 if (badge) badge.textContent = 'LOCAL STATE RESTORED · ' + new Date().toLocaleTimeString();
                 window.showToast('Restored', 'Precog workspace restored from local storage.');
                 return true;
@@ -1493,7 +1592,7 @@
                 timer = setTimeout(save, 350);
             }
 
-            return {save, restore, snapshot, exportBackup, importBackup, schedule, putEmulatorState, getEmulatorState, clearEmulatorState};
+            return {save, restore, snapshot, exportBackup, importBackup, schedule};
         })();
 
         // Save UI changes automatically.
@@ -1502,8 +1601,7 @@
             // Best-effort synchronous fallback for the last UI snapshot.
             try { localStorage.setItem('precog-state-last', JSON.stringify({
                 version: 3, savedAt: new Date().toISOString(),
-                activeApp: document.querySelector('.dock .icon.active')?.dataset.app || 'android',
-                androidZoomLevel
+                activeApp: document.querySelector('.dock .icon.active')?.dataset.app || 'ide'
             })); } catch (_) {}
         });
 
@@ -1561,114 +1659,399 @@
         };
 
         // ================================================================
-        //  V86 ANDROID RUNTIME — LOCAL DISK + INDEXEDDB STATE
+        //  BLUEHOUND WEB IDE — detection labs + simulated lab terminal
+        //  Fully client-side. No network calls are made for grading;
+        //  the terminal operates on a synthetic TEST-NET-1 environment.
         // ================================================================
-        const PrecogEmulator = (() => {
-            const A = './assets/';
-            let emulator = null;
-            let booted = false;
-            let autosaveTimer = null;
+        const PrecogIDE = (() => {
+            const editor = document.getElementById('ideEditor');
+            const gutter = document.getElementById('ideGutter');
+            const output = document.getElementById('ideOutput');
+            const terminalEl = document.getElementById('ideTerminal');
+            const terminalInput = document.getElementById('ideTerminalInput');
+            const labTitle = document.getElementById('ideLabTitle');
+            const labBrief = document.getElementById('ideLabBrief');
+            const scoreEl = document.getElementById('ideScore');
+            const labList = document.getElementById('ideLabList');
+            if (!editor) return {};
 
-            function status(text, ok=false) {
-                const el = document.getElementById('emulatorStateBadge');
-                if (el) {
-                    el.textContent = text;
-                    el.style.color = ok ? '#33ff99' : '#ffcc66';
+            const PROGRESS_KEY = 'precog-ide-progress';
+            const LAB_KEY = 'precog-ide-lab';
+            const points = 100;
+
+            // ---------- Sample data (synthetic, RFC 5737 / RFC 6890 space) ----------
+            const EVIL_UA = 'sqlmap/1.7.10#stable';
+            const LAB1_LINES = [
+                '203.0.113.9 - - [05/Nov/2026:10:01:11 +0000] "GET /index.html HTTP/1.1" 200 4211 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"',
+                '198.51.100.23 - - [05/Nov/2026:10:02:02 +0000] "GET /products HTTP/1.1" 200 9921 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15"',
+                '203.0.113.66 - - [05/Nov/2026:10:03:47 +0000] "GET /login HTTP/1.1" 401 212 "-" "sqlmap/1.7.10#stable"',
+                '192.0.2.140 - - [05/Nov/2026:10:04:10 +0000] "GET /about HTTP/1.1" 200 3880 "-" "Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0"',
+                '203.0.113.66 - - [05/Nov/2026:10:04:13 +0000] "POST /login HTTP/1.1" 401 212 "-" "sqlmap/1.7.10#stable"',
+                '203.0.113.66 - - [05/Nov/2026:10:04:19 +0000] "POST /login HTTP/1.1" 200 1024 "-" "sqlmap/1.7.10#stable"',
+                '198.51.100.77 - - [05/Nov/2026:10:05:31 +0000] "GET /cart HTTP/1.1" 200 7310 "-" "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Safari/604.1"'
+            ];
+            const LAB3_LINES = [
+                '203.0.113.66 GET /login 401', '198.51.100.23 GET /index.html 200',
+                '203.0.113.66 GET /login 401', '203.0.113.66 POST /login 401',
+                '192.0.2.140 GET /about 200', '203.0.113.66 GET /login 401',
+                '203.0.113.66 POST /login 401', '198.51.100.77 GET /cart 200',
+                '203.0.113.66 GET /login 401', '203.0.113.66 POST /login 200',
+                '203.0.113.66 GET /admin 401', '192.0.2.140 GET /pricing 200'
+            ];
+            const LAB4_TOKENS = [
+                { token: 'kQ9vX2nB8mZ4pL1sD6rT3wH7yF5uI0oA', suspicious: true },
+                { token: 'ZmxhZ3tieWxvdWluZ19kZXRlaWN0X2NvbnZlbnRpb25fZXhjaXRlX2Nhcw==', suspicious: true },
+                { token: 'quarterly-planning', suspicious: false },
+                { token: 'admin-console-v2', suspicious: false },
+                { token: 'XK92mQpL17vBz04RtYw8NcHaS63DfG01jKU', suspicious: true },
+                { token: 'team-offsite-2026', suspicious: false }
+            ];
+            const LAB6_BANDS = [
+                [0.0, 'None'], [0.1, 'Low'], [3.9, 'Low'], [4.0, 'Medium'], [6.9, 'Medium'],
+                [7.0, 'High'], [8.9, 'High'], [9.0, 'Critical'], [10.0, 'Critical']
+            ];
+
+            // ---------- Lab definitions ----------
+            const LABS = [
+                {
+                    id: 'lab-regex', title: '1 · Regex surgeon', points,
+                    brief: 'Write a JS regex literal assigned to `pattern` that matches the sqlmap User-Agent on lines containing "sqlmap/1.7" and nothing else. 3 of 7 sample lines should match.',
+                    hint: 'Anchor on the tool name, not on generic letters: /sqlmap\\/1\\.7/ is enough. Avoid \\b if it excludes the trailing "#stable" — that is fine, partial match is OK.',
+                    starter: '// Sample access-log hits (synthetic TEST-NET space):\n// 203.0.113.66 … "sqlmap/1.7.10#stable"   <-- evil (x3)\n// everyone else                       <-- benign (x4)\n//\n// Assign your regex to `pattern`:\nconst pattern = /sqlmap\\/1\\.7/;\nmodule.exports = pattern;\n',
+                    run(src) {
+                        let pattern = null;
+                        try {
+                            const mod = { exports: {} };
+                            new Function('module', 'exports', '"use strict";\n' + src)(mod, mod.exports);
+                            pattern = mod.exports;
+                        } catch (e) { return [{ name: 'Compiles', pass: false, detail: String(e.message || e) }]; }
+                        if (!(pattern instanceof RegExp) && pattern && pattern.pattern instanceof RegExp) pattern = pattern.pattern;
+                        if (!(pattern instanceof RegExp)) return [{ name: 'Exports a RegExp', pass: false, detail: 'module.exports must be a RegExp (e.g. module.exports = /…/;)' }];
+                        const matched = LAB1_LINES.filter(l => pattern.test(l));
+                        const evilHits = matched.filter(l => l.includes(EVIL_UA)).length;
+                        const benignHits = matched.length - evilHits;
+                        return [
+                            { name: 'Compiles & exports RegExp', pass: true, detail: String(pattern) },
+                            { name: 'Matches all 3 sqlmap lines', pass: evilHits === 3, detail: evilHits + '/3 matched' },
+                            { name: 'Zero false positives on benign lines', pass: benignHits === 0, detail: benignHits + ' benign line(s) matched' }
+                        ];
+                    }
+                },
+                {
+                    id: 'lab-sigma', title: '2 · Sigma rule (structural)', points,
+                    brief: 'Author a Sigma-style YAML detection for the Mimikatz command line `mimikatz.exe` on Windows. Structural validation only — not evaluated by a real Sigma engine.',
+                    hint: 'Required top-level keys: title, logsource, detection (with a selection and a condition). Put mimikatz under CommandLine or Image inside the selection.',
+                    starter: 'title: Mimikatz Command Line\nstatus: test\nlogsource:\n  product: windows\n  category: process_creation\ndetection:\n  selection:\n    CommandLine|contains: \'mimikatz\'\n  condition: selection\nlevel: high\n',
+                    run(src) {
+                        const need = ['title:', 'logsource:', 'detection:', 'selection:', 'condition:'];
+                        const missing = need.filter(k => !new RegExp('^\\s*' + k.replace(':', '\\s*:'), 'mi').test(src));
+                        const targetsMimikatz = /mimikatz/i.test(src);
+                        const scopesProcess = /CommandLine|Image|OriginalFileName/i.test(src);
+                        return [
+                            { name: 'Required keys present', pass: missing.length === 0, detail: missing.length ? 'missing: ' + missing.join(', ') : 'title · logsource · detection · selection · condition' },
+                            { name: 'Selection references mimikatz', pass: targetsMimikatz, detail: targetsMimikatz ? 'found' : 'no "mimikatz" string in selection' },
+                            { name: 'Scoped to process telemetry', pass: scopesProcess, detail: scopesProcess ? 'CommandLine/Image present' : 'use CommandLine or Image' },
+                            { name: 'Structural validation only', pass: true, detail: 'not executed by a Sigma backend — verify in your own pipeline' }
+                        ];
+                    }
+                },
+                {
+                    id: 'lab-logs', title: '3 · Brute-force hunter', points,
+                    brief: 'Implement analyze(lines) → { attackerIp, attempts }. `lines` is an array of "IP METHOD PATH STATUS" strings. The attacker is the IP with ≥5 failed (401) logins.',
+                    hint: 'Split each line, count 401s per IP, return the top offender. Test data has 6 failures from 203.0.113.66.',
+                    starter: '// lines: ["203.0.113.66 GET /login 401", …]\nfunction analyze(lines) {\n  const fails = {};\n  for (const line of lines) {\n    const [ip, , path, status] = line.split(\' \');\n    if (path === \'/login\' && status === \'401\') fails[ip] = (fails[ip] || 0) + 1;\n  }\n  let attackerIp = null, attempts = 0;\n  for (const [ip, n] of Object.entries(fails)) if (n > attempts) { attempts = n; attackerIp = ip; }\n  return { attackerIp, attempts };\n}\nmodule.exports = { analyze };\n',
+                    run(src) {
+                        let analyze = null;
+                        try {
+                            const mod = { exports: {} };
+                            new Function('module', 'exports', '"use strict";\n' + src)(mod, mod.exports);
+                            analyze = mod.exports.analyze || mod.exports;
+                        } catch (e) { return [{ name: 'Compiles', pass: false, detail: String(e.message || e) }]; }
+                        if (typeof analyze !== 'function') return [{ name: 'Exports analyze()', pass: false, detail: 'module.exports = { analyze }' }];
+                        let got = null;
+                        try { got = analyze(LAB3_LINES.slice()); } catch (e) { return [{ name: 'Runs without throwing', pass: false, detail: String(e.message || e) }]; }
+                        return [
+                            { name: 'Runs without throwing', pass: true, detail: 'ok' },
+                            { name: 'Attacker IP is 203.0.113.66', pass: got && got.attackerIp === '203.0.113.66', detail: 'got: ' + JSON.stringify(got) },
+                            { name: 'Attempt count >= 5', pass: got && got.attempts >= 5, detail: 'got: ' + (got && got.attempts) }
+                        ];
+                    }
+                },
+                {
+                    id: 'lab-entropy', title: '4 · Entropy hunt', points,
+                    brief: 'Implement Shannon entropy `entropy(s)` (bits per char) and `isSuspicious(token)` → true when entropy > 4.0 AND the token is base64-ish (A–Za–z0–9+/=).',
+                    hint: 'H = -Σ p(c)·log2(p(c)). Use Math.log2. Test: entropy("aaaa") === 0, entropy("ab") === 1.',
+                    starter: 'function entropy(s) {\n  if (!s) return 0;\n  const freq = {};\n  for (const ch of s) freq[ch] = (freq[ch] || 0) + 1;\n  let h = 0;\n  for (const n of Object.values(freq)) {\n    const p = n / s.length;\n    h -= p * Math.log2(p);\n  }\n  return h;\n}\nfunction isSuspicious(token) {\n  return entropy(token) > 4.0 && /^[A-Za-z0-9+/=]+$/.test(token);\n}\nmodule.exports = { entropy, isSuspicious };\n',
+                    run(src) {
+                        let entropyFn = null, susFn = null;
+                        try {
+                            const mod = { exports: {} };
+                            new Function('module', 'exports', '"use strict";\n' + src)(mod, mod.exports);
+                            entropyFn = mod.exports.entropy; susFn = mod.exports.isSuspicious;
+                        } catch (e) { return [{ name: 'Compiles', pass: false, detail: String(e.message || e) }]; }
+                        if (typeof entropyFn !== 'function' || typeof susFn !== 'function') {
+                            return [{ name: 'Exports entropy + isSuspicious', pass: false, detail: 'module.exports = { entropy, isSuspicious }' }];
+                        }
+                        const e0 = entropyFn('aaaa'), e1 = entropyFn('ab');
+                        const verdicts = LAB4_TOKENS.map(t => { try { return !!susFn(t.token); } catch { return null; } });
+                        const correct = LAB4_TOKENS.filter((t, i) => verdicts[i] === t.suspicious).length;
+                        return [
+                            { name: 'entropy("aaaa") === 0', pass: e0 === 0, detail: 'got ' + e0 },
+                            { name: 'entropy("ab") === 1', pass: Math.abs(e1 - 1) < 1e-9, detail: 'got ' + e1 },
+                            { name: 'isSuspicious flags high-entropy base64', pass: correct === LAB4_TOKENS.length, detail: correct + '/' + LAB4_TOKENS.length + ' tokens classified correctly' }
+                        ];
+                    }
+                },
+                {
+                    id: 'lab-flag', title: '5 · Recover the flag', points,
+                    brief: 'A flag is base64-encoded in the terminal history. Use the terminal (`history` then `decode <blob>`) to reveal it, then set `const flag = "…"` below.',
+                    hint: 'Run `history`. One entry is a base64 blob. `decode <blob>` reveals the flag. Paste it in quotes.',
+                    starter: '// Reveal via the terminal: history → decode <blob>\nconst flag = \'paste-the-flag-here\';\nmodule.exports = flag;\n',
+                    run(src) {
+                        const m = src.match(/flag\s*=\s*['"`]([^'"`]+)['"`]/);
+                        const got = m ? m[1].trim() : null;
+                        const expected = 'flag{bluehound_l0gs_0nly}';
+                        return [
+                            { name: 'flag literal found', pass: !!got, detail: got ? 'found' : 'no const flag = "…" assignment' },
+                            { name: 'Flag matches', pass: got === expected, detail: got === expected ? 'correct' : 'incorrect — use the terminal' }
+                        ];
+                    }
+                },
+                {
+                    id: 'lab-cvss', title: '6 · CVSS severity bands', points,
+                    brief: 'Implement severity(score) using FIRST CVSS v3.x qualitative bands: 0.0 None · 0.1–3.9 Low · 4.0–6.9 Medium · 7.0–8.9 High · 9.0–10.0 Critical.',
+                    hint: 'Walk the bands from the top down with if/else if, or use thresholds: >=9 Critical, >=7 High, >=4 Medium, >0 Low, else None.',
+                    starter: 'function severity(score) {\n  if (score >= 9.0) return \'Critical\';\n  if (score >= 7.0) return \'High\';\n  if (score >= 4.0) return \'Medium\';\n  if (score >= 0.1) return \'Low\';\n  return \'None\';\n}\nmodule.exports = severity;\n',
+                    run(src) {
+                        let fn = null;
+                        try {
+                            const mod = { exports: {} };
+                            new Function('module', 'exports', '"use strict";\n' + src)(mod, mod.exports);
+                            fn = typeof mod.exports === 'function' ? mod.exports : mod.exports.severity;
+                        } catch (e) { return [{ name: 'Compiles', pass: false, detail: String(e.message || e) }]; }
+                        if (typeof fn !== 'function') return [{ name: 'Exports severity()', pass: false, detail: 'module.exports = severity' }];
+                        const results = LAB6_BANDS.map(([s, want]) => {
+                            let got = null; try { got = String(fn(s)); } catch (e) { got = 'threw: ' + e.message; }
+                            return { s, want, got, pass: got === want };
+                        });
+                        return results.map(r => ({ name: 'severity(' + r.s + ') = "' + r.want + '"', pass: r.pass, detail: 'got "' + r.got + '"' }));
+                    }
+                }
+            ];
+
+            // ---------- Progress ----------
+            function loadProgress() {
+                try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch { return {}; }
+            }
+            function saveProgress(p) {
+                try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch {}
+            }
+            function totalScore(p) {
+                return LABS.reduce((sum, l) => sum + (p[l.id] ? l.points : 0), 0);
+            }
+            function renderScore() {
+                const p = loadProgress();
+                scoreEl.textContent = totalScore(p) + ' / ' + (LABS.length * points) + ' pts';
+            }
+            function renderLabList(activeId) {
+                const p = loadProgress();
+                labList.querySelectorAll('.ide-lab').forEach(b => b.remove());
+                LABS.forEach(lab => {
+                    const btn = document.createElement('button');
+                    btn.className = 'ide-lab' + (lab.id === activeId ? ' active' : '');
+                    btn.dataset.lab = lab.id;
+                    btn.innerHTML = '<span>' + lab.title + '</span><span class="ide-lab-score">' + (p[lab.id] ? '✓ ' + lab.points : '') + '</span>';
+                    btn.addEventListener('click', () => selectLab(lab.id));
+                    labList.appendChild(btn);
+                });
+                renderScore();
+            }
+
+            // ---------- Editor behaviour ----------
+            function syncGutter() {
+                const lines = editor.value.split('\n').length;
+                let out = '';
+                for (let i = 1; i <= lines; i++) out += i + '\n';
+                gutter.textContent = out;
+                gutter.scrollTop = editor.scrollTop;
+            }
+            editor.addEventListener('input', syncGutter);
+            editor.addEventListener('scroll', () => { gutter.scrollTop = editor.scrollTop; });
+            editor.addEventListener('keydown', e => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const s = editor.selectionStart, t = editor.selectionEnd;
+                    editor.setRangeText('  ', s, t, 'end');
+                    syncGutter();
+                }
+            });
+
+            // ---------- Output helpers ----------
+            function outLine(html) {
+                output.innerHTML += html + '\n';
+                output.scrollTop = output.scrollHeight;
+            }
+            function outClear() { output.textContent = ''; }
+            function termLine(text) {
+                terminalEl.textContent += text + '\n';
+                terminalEl.scrollTop = terminalEl.scrollHeight;
+            }
+            document.getElementById('ideClearOutput')?.addEventListener('click', outClear);
+
+            // ---------- Lab selection & grading ----------
+            let currentLab = null;
+            function selectLab(id) {
+                currentLab = LABS.find(l => l.id === id) || LABS[0];
+                try { localStorage.setItem(LAB_KEY, currentLab.id); } catch {}
+                labTitle.textContent = currentLab.title;
+                labBrief.textContent = currentLab.brief;
+                editor.value = currentLab.starter;
+                outClear();
+                outLine('// ' + currentLab.title + ' — press "Run checks" when ready.');
+                syncGutter();
+                renderLabList(currentLab.id);
+            }
+            function gradeCurrentLab() {
+                if (!currentLab) return;
+                outClear();
+                outLine('<span class="warn">Running checks for ' + currentLab.title + '…</span>');
+                let results = [];
+                try { results = currentLab.run(editor.value) || []; }
+                catch (e) { results = [{ name: 'Runner error', pass: false, detail: String((e && e.message) || e) }]; }
+                results.forEach(r => outLine((r.pass ? '<span class="ok">PASS</span>' : '<span class="err">FAIL</span>') + '  ' + r.name + (r.detail ? '  <span class="warn">— ' + escapeHtml(String(r.detail)) + '</span>' : '')));
+                const allPass = results.length > 0 && results.every(r => r.pass);
+                if (allPass) {
+                    const p = loadProgress();
+                    const first = !p[currentLab.id];
+                    p[currentLab.id] = true;
+                    saveProgress(p);
+                    renderLabList(currentLab.id);
+                    outLine('<span class="ok">ALL CHECKS PASSED' + (first ? ' — +' + currentLab.points + ' pts' : ' (already solved)') + '</span>');
+                    if (first) window.showToast('Lab solved', currentLab.title + ' · +' + currentLab.points + ' pts');
+                } else {
+                    outLine('<span class="err">Not yet — fix the failing checks above.</span>');
                 }
             }
-
-            function loadScript(src) {
-                return new Promise((resolve, reject) => {
-                    const existing = document.querySelector(`script[data-v86="${src}"]`);
-                    if (existing) return existing.dataset.loaded === '1' ? resolve() : existing.addEventListener('load', resolve, {once:true});
-                    const script = document.createElement('script');
-                    script.src = src;
-                    script.dataset.v86 = src;
-                    script.onload = () => { script.dataset.loaded='1'; resolve(); };
-                    script.onerror = () => reject(new Error('Unable to load v86 runtime: ' + src));
-                    document.head.appendChild(script);
-                });
+            function escapeHtml(s) {
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
+            document.getElementById('ideRun')?.addEventListener('click', gradeCurrentLab);
+            document.getElementById('ideReset')?.addEventListener('click', () => { if (currentLab) selectLab(currentLab.id); });
+            document.getElementById('ideHint')?.addEventListener('click', () => { if (currentLab) outLine('<span class="warn">HINT: ' + escapeHtml(currentLab.hint) + '</span>'); });
 
-            async function loadState() {
-                try {
-                    const state = await PrecogPersistence.getEmulatorState?.();
-                    return state || null;
-                } catch (e) { console.warn('No emulator state:', e); return null; }
+            // ---------- Simulated lab terminal ----------
+            const LAB_HOSTS = {
+                '192.0.2.10': { role: 'bastion / jump host', ports: '22/tcp open  ssh (OpenSSH 9.6)\n80/tcp open  http (nginx 1.25)' },
+                '192.0.2.11': { role: 'web frontend', ports: '80/tcp open  http (nginx 1.25)\n443/tcp open https (nginx 1.25)' },
+                '192.0.2.22': { role: 'db (internal only)', ports: '5432/tcp open postgresql 15' }
+            };
+            const HISTORY_BLOB = 'ZmxhZ3tibHVlaG91bmRfbDBnc18wbmx5fQ==';
+            const historyLines = [
+                'nmap -sV 192.0.2.11',
+                'cat /var/log/nginx/access.log | grep 401 | tail -5',
+                'echo ' + HISTORY_BLOB,
+                'decode ' + HISTORY_BLOB
+            ];
+            const termHistory = [];
+            function termPrintHelp() {
+                termLine('Available (synthetic) commands:');
+                termLine('  help                 show this list');
+                termLine('  whoami | hostname | id | uname');
+                termLine('  ip a                 show synthetic interfaces');
+                termLine('  ping 192.0.2.x       synthetic ICMP replies');
+                termLine('  nmap 192.0.2.10|11|22   synthetic scan (no packets sent)');
+                termLine('  cat flag.txt         read the lab flag');
+                termLine('  history              shell history (contains a blob)');
+                termLine('  decode <base64>      base64-decode a string');
+                termLine('  b64 <text>           base64-encode a string');
+                termLine('  hex <text>           hex-dump a string');
+                termLine('  hash <text>          SHA-256 of a string (WebCrypto)');
+                termLine('  score                your lab score');
+                termLine('  clear                clear the terminal');
             }
-
-            function start() {
-                return loadScript(A + 'libv86.js').then(async () => {
-                    if (!window.V86Starter && !window.V86) throw new Error('v86 library loaded but V86 API was not found');
-                    const Runtime = window.V86Starter || window.V86;
-                    const screen = document.getElementById('androidRuntime');
-                    screen.innerHTML = `<div id="screen_container" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000"><div style="white-space:pre;font:14px monospace;line-height:14px;color:#8fb8d8"></div><canvas style="display:none"></canvas></div>`;
-                    status('STARTING ANDROID…');
-                    emulator = new Runtime({
-                        wasm_path: A + 'v86.wasm',
-                        memory_size: 128 * 1024 * 1024,
-                        vga_memory_size: 8 * 1024 * 1024,
-                        screen_container: document.getElementById('screen_container'),
-                        bios: { url: A + 'seabios.bin' },
-                        vga_bios: { url: A + 'vgabios.bin' },
-                        hda: { url: A + 'android-x86-4.4-r2.img', async: true },
-                        autostart: true,
-                        disable_mouse: false,
-                        disable_keyboard: false,
-                    });
-                    booted = true;
-                    status('ANDROID RUNTIME ACTIVE', true);
-                    applyAndroidZoom();
-                    const saved = await loadState();
-                    if (saved) {
-                        status('RESTORING ANDROID STATE…');
-                        await new Promise((resolve, reject) => emulator.restore_state(saved, err => err ? reject(err) : resolve()));
-                        status('ANDROID STATE RESTORED', true);
+            async function sha256Hex(text) {
+                if (window.crypto?.subtle) {
+                    const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+                    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+                return '(WebCrypto unavailable in this context)';
+            }
+            async function runTermCommand(raw) {
+                const line = raw.trim();
+                if (!line) return;
+                termHistory.push(line);
+                termLine('lab> ' + line);
+                const [cmd, ...args] = line.split(/\s+/);
+                const arg = args.join(' ');
+                switch (cmd.toLowerCase()) {
+                    case 'help': termPrintHelp(); break;
+                    case 'whoami': termLine('analyst'); break;
+                    case 'hostname': termLine('bluehound-lab'); break;
+                    case 'id': termLine('uid=1000(analyst) gid=1000(analyst) groups=1000(analyst),27(sudo)'); break;
+                    case 'uname': termLine('Linux bluehound-lab 6.6.0-lab #1 SMP x86_64 GNU/Linux'); break;
+                    case 'ip':
+                        termLine('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500');
+                        termLine('    inet 192.0.2.10/24 brd 192.0.2.255 scope global eth0');
+                        termLine('    inet6 2001:db8::10/64 scope global');
+                        break;
+                    case 'ping': {
+                        const host = args[0] || '';
+                        if (!/^192\.0\.2\.\d{1,3}$/.test(host)) { termLine('lab: only 192.0.2.0/24 (TEST-NET-1) exists in this synthetic lab.'); break; }
+                        for (let i = 1; i <= 3; i++) termLine('64 bytes from ' + host + ': icmp_seq=' + i + ' ttl=64 time=' + (8 + Math.floor(Math.random() * 12)) + ' ms');
+                        termLine('--- ' + host + ' ping statistics --- 3 packets transmitted, 3 received, 0% packet loss');
+                        break;
                     }
-                    clearInterval(autosaveTimer);
-                    autosaveTimer = setInterval(() => save(), 60000);
-                    return emulator;
-                }).catch(err => {
-                    console.error(err);
-                    status('RUNTIME ASSETS NOT FOUND');
-                    const badge = document.getElementById('emulatorStateBadge');
-                    if (badge) badge.title = 'Place libv86.js, v86.wasm, seabios.bin, vgabios.bin and android-x86-4.4-r2.img in ./assets/';
-                });
+                    case 'nmap': {
+                        const host = args[0] || '';
+                        const entry = LAB_HOSTS[host];
+                        if (!entry) { termLine('lab: host not in the synthetic range (192.0.2.0/24). No external scan is performed — this is a simulation.'); break; }
+                        termLine('Starting Nmap 7.94 ( https://nmap.org ) [SIMULATED]');
+                        termLine('Nmap scan report for ' + host + ' (' + entry.role + ')');
+                        termLine(entry.ports);
+                        termLine('MAC Address: 00:00:5E:00:53:' + host.split('.')[3].padStart(2, '0') + ' (lab)');
+                        termLine('Nmap done: 1 IP address (1 host up) scanned in 0.42s');
+                        break;
+                    }
+                    case 'cat':
+                        if (arg === 'flag.txt') termLine('flag{bluehound_l0gs_0nly}');
+                        else termLine('cat: ' + (arg || '(missing operand)') + ': No such file or directory (synthetic fs)');
+                        break;
+                    case 'history': historyLines.forEach((h, i) => termLine('  ' + (i + 1) + '  ' + h)); break;
+                    case 'decode':
+                        try { termLine(atob(arg)); } catch { termLine('decode: invalid base64'); }
+                        break;
+                    case 'b64':
+                        try { termLine(btoa(unescape(encodeURIComponent(arg)))); } catch { termLine('b64: encoding failed'); }
+                        break;
+                    case 'hex':
+                        termLine([...arg].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' '));
+                        break;
+                    case 'hash':
+                        termLine(await sha256Hex(arg));
+                        break;
+                    case 'score': {
+                        const p = loadProgress();
+                        LABS.forEach(l => termLine('  ' + (p[l.id] ? '[x]' : '[ ]') + ' ' + l.title + '  (' + (p[l.id] ? l.points : 0) + ' pts)'));
+                        termLine('Total: ' + totalScore(p) + ' / ' + (LABS.length * points) + ' pts');
+                        break;
+                    }
+                    case 'clear': terminalEl.textContent = ''; break;
+                    case 'exit': termLine('There is no escape from the lab. (close the window instead)'); break;
+                    default: termLine(cmd + ': command not found — try \'help\'');
+                }
             }
+            terminalInput?.addEventListener('keydown', async e => {
+                if (e.key !== 'Enter') return;
+                const value = terminalInput.value;
+                terminalInput.value = '';
+                await runTermCommand(value);
+            });
 
-            async function save() {
-                if (!emulator || !booted || !emulator.save_state) return false;
-                status('SAVING ANDROID STATE…');
-                return new Promise(resolve => {
-                    emulator.save_state(async (error, state) => {
-                        if (error) { console.error(error); status('SAVE FAILED'); return resolve(false); }
-                        try {
-                            await PrecogPersistence.putEmulatorState?.(state);
-                            status('ANDROID STATE SAVED · ' + new Date().toLocaleTimeString(), true);
-                            resolve(true);
-                        } catch (e) { console.error(e); status('SAVE FAILED'); resolve(false); }
-                    });
-                });
-            }
-
-            async function restore() {
-                if (!emulator) return start();
-                const state = await loadState();
-                if (!state) return window.showToast('Emulator', 'No Android snapshot exists yet.');
-                emulator.stop();
-                await new Promise((resolve, reject) => emulator.restore_state(state, err => err ? reject(err) : resolve()));
-                emulator.run();
-                status('ANDROID STATE RESTORED', true);
-            }
-
-            async function reset() {
-                if (emulator) { try { emulator.stop(); } catch(_){} emulator = null; }
-                await PrecogPersistence.clearEmulatorState?.();
-                location.reload();
-            }
-
-            window.addEventListener('pagehide', () => { try { save(); } catch(_){} });
-            return {start, save, restore, reset};
+            // ---------- Boot ----------
+            const savedLab = (() => { try { return localStorage.getItem(LAB_KEY); } catch { return null; } })();
+            const initial = LABS.find(l => l.id === savedLab) || LABS[0];
+            selectLab(initial.id);
+            return { selectLab };
         })();
 
         // ================================================================
@@ -1764,15 +2147,14 @@
         //  INIT
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
-            openWindow('android');
-            PrecogEmulator.start();
+            openWindow('ide');
             PrecogPersistence.restore().catch(e => console.warn('Restore failed:', e));
             if (window.ethereum) {
                 connectBtn.disabled = false;
                 connectBtn.title = 'Connect browser wallet';
             }
-            showToast('Precog Security', 'BlueHound OS ready. Local persistence enabled.');
-            console.log('🛡️ Precog Security v3 – Local v86 Android runtime + IndexedDB persistence.');
+            showToast('Precog Security', 'BlueHound Web IDE ready. All lab grading runs locally in your browser.');
+            console.log('🛡️ Precog Security v4 – BlueHound Web IDE (detection labs + simulated lab shell), local IndexedDB persistence.');
         });
     </script>
 <input id="precogBackupInput" type="file" accept="application/json" hidden>
