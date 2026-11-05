@@ -9,10 +9,15 @@ owned and directed by **timlangeveldt@gmail.com** and **ryanlangeveldt99@gmail.c
 
 BlueHound OS is a single-file, offline-first digital assistant desktop shell:
 
+- **BlueHound Web IDE** — a client-side cybersecurity playground that replaces the
+  old (non-functional) v86 Android emulator. It contains six graded detection labs
+  (regex triage, Sigma rule authoring, brute-force log parsing, Shannon-entropy
+  hunting, flag recovery and CVSS v3 severity bands) plus a **simulated lab terminal**
+  for a synthetic RFC 5737 TEST-NET-1 environment (`192.0.2.0/24`). All grading and
+  all terminal commands run locally in the browser; no lab target exists off-device
+  and no packets are ever sent. Scoring persists in `localStorage`.
 - **BlueHound AI** — defensive cybersecurity assistant chat. Local **Ollama** first
   (`http://localhost:11434`), optional OpenRouter. No keys bundled.
-- **Android-x86 4.4** — a fully embedded emulator runtime via **v86** (WASM) with
-  IndexedDB snapshot persistence (local assets required, see below).
 - **Cybersecurity Tools** — IP/abuse scan, IP geolocation lookup, live CVE (NVD)
   lookup, breach check (HIBP).
 - **Attack Path** — BlueHound-inspired threat mapping: combines entry-point
@@ -23,18 +28,18 @@ BlueHound OS is a single-file, offline-first digital assistant desktop shell:
 - **Games** — Pixels on Ronin.
 - **Wallet** — WalletConnect + injected EIP-1193 wallet, PRST balance check on
   Robinhood Chain (`0xb2a8E38177c1a023db108e28384aa6055A1c7Ba3`).
-- **Persistence** — everything (windows, zoom, chat, inputs, emulator snapshots)
-  is saved locally to IndexedDB and can be exported/imported as a JSON backup.
+- **Persistence** — everything (windows, chat, inputs, IDE state) is saved locally
+  to IndexedDB and can be exported/imported as a JSON backup.
 
-## Run locally (full experience)
+## Run locally
 
 ```powershell
-.\fetch-assets.ps1   # downloads v86 lib/WASM/BIOS + Android-x86 image (~411 MB) into assets/
-.\serve.cmd          # serves on http://127.0.0.1:8080
+.\serve.ps1   # serves on http://127.0.0.1:8080
 ```
 
-Without the local assets, the app still works — only the Android runtime shows a
-"assets not found" placeholder (the assistant, tools, wallet and state all work).
+No multi-hundred-megabyte emulator assets are required anymore. The Web IDE and its
+labs are fully self-contained in `index.html`; only the external CDN links (fonts,
+Ethers.js, etc.) need network access.
 
 ## Deploy
 
@@ -46,7 +51,7 @@ https://precogsecurity.github.io/BlueHound/
 
 ## Stack
 
-- v86 emulator + Android-x86 4.4 image
+- Vanilla JS single-file app (no build step) — detection labs graded in-browser
 - Ollama / OpenRouter for local-first AI
 - Ethers.js · WalletConnect · CryptoJS · Axios · Day.js
 - IndexedDB + localStorage persistence
